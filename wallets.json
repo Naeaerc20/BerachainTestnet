@@ -1,0 +1,18 @@
+[
+    {
+        "id": 1,
+        "wallet": "",
+        "privateKey": ""
+    },
+    {
+        "id": 2,
+        "wallet": "",
+        "privateKey": ""
+    },
+    {
+        "id": 3,
+        "wallet": "",
+        "privateKey": ""
+    }
+// add as many as you want (delete this message)
+]
