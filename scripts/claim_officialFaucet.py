@@ -17,12 +17,12 @@ init(autoreset=True)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 WALLETS_PATH = os.path.join(BASE_DIR, 'wallets.json')
 PROXIES_PATH = os.path.join(BASE_DIR, 'scripts', 'proxies.txt')
-RPC_URL = 'INSERT YOUR ETHEREUM MAINNET RPC'
+RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/t_qjVdhjAo-ygO6wAiQIu_bOiJ7BopN5'
 CHAIN_ID = 1
 FAUCET_URL = 'https://bartiofaucet.berachain.com/api/claim'
 SITE_KEY = '0x4AAAAAAARdAuciFArKhVwt'
 WEBSITE_URL = 'https://bartio.faucet.berachain.com/'
-API_KEY = 'INSERT YOUR 2CAPTCHA API KEY'
+API_KEY = '0581fc082b246dd1f64ac05e2bdc317d'
 
 # Iconos
 SUCCESS_ICON = '✅'

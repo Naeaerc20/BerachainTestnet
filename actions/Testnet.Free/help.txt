@@ -1,0 +1,2 @@
+To convert any image into URI format use services like: "https://pinata.cloud/" - "https://nft.storage/"
+Result will be like: QmdiMNNGaJVEGd3m9i2UConZySeBZFrD2K4kd2kWvbUt2e - that's what u should insert on imageURI
