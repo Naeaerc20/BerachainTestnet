@@ -1,5 +1,5 @@
 const REGISTER_CONTRACT = "0xccc13A84eC34f3b1FbEF193557a68F9af2173Ab9";
-const RPC_URL = "bartio.rpc.berachain.com";
+const RPC_URL = "https://bartio.rpc.berachain.com";
 const CHAIN_ID = 80084;
 const TX_EXPLORER = "https://bartio.beratrail.io/tx/";
 
