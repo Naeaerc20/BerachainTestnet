@@ -10,28 +10,79 @@ from twocaptcha import TwoCaptcha
 from colorama import init, Fore, Style
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Inicializar colorama
+# Initialize colorama
 init(autoreset=True)
 
-# Configuración
+# Configuration Paths
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 WALLETS_PATH = os.path.join(BASE_DIR, 'wallets.json')
 PROXIES_PATH = os.path.join(BASE_DIR, 'scripts', 'proxies.txt')
-RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/t_qjVdhjAo-ygO6wAiQIu_bOiJ7BopN5'
+
+# Faucet Configuration
 CHAIN_ID = 1
 FAUCET_URL = 'https://bartiofaucet.berachain.com/api/claim'
 SITE_KEY = '0x4AAAAAAARdAuciFArKhVwt'
 WEBSITE_URL = 'https://bartio.faucet.berachain.com/'
-API_KEY = '0581fc082b246dd1f64ac05e2bdc317d'
 
-# Iconos
+# Icons
 SUCCESS_ICON = '✅'
 FAILURE_ICON = '❌'
 INFO_ICON = 'ℹ️'
 SECTION_DIVIDER = '#' * 75
 
-# Número máximo de hilos concurrentes para verificación de balances
+# Maximum number of concurrent threads for balance verification
 MAX_WORKERS_BALANCE = 10
+
+# Initialize RPC_URL and API_KEY as empty strings
+RPC_URL = ''
+API_KEY = ''
+
+def update_self_variable(variable_name, new_value):
+    """
+    Updates the value of a variable in the current script file.
+
+    Args:
+        variable_name (str): The name of the variable to update.
+        new_value (str): The new value to assign to the variable.
+    """
+    try:
+        script_path = os.path.realpath(__file__)
+        with open(script_path, 'r') as file:
+            lines = file.readlines()
+
+        with open(script_path, 'w') as file:
+            for line in lines:
+                if line.strip().startswith(variable_name):
+                    # Replace the line with the new value
+                    indent = re.match(r'\s*', line).group()
+                    line = f"{indent}{variable_name} = '{new_value}'\n"
+                file.write(line)
+        print(f"{SUCCESS_ICON} {variable_name} has been updated successfully.")
+    except Exception as e:
+        print(f"{FAILURE_ICON} Error updating {variable_name}: {e}")
+        sys.exit(1)
+
+def initialize_credentials():
+    """
+    Checks if RPC_URL and API_KEY are set. If not, prompts the user to input them
+    and updates the script file accordingly.
+    """
+    global RPC_URL, API_KEY
+
+    needs_update = False
+
+    if not RPC_URL:
+        RPC_URL = input("RPC URL is empty. Please enter your Ethereum RPC Node URL: ").strip()
+        update_self_variable('RPC_URL', RPC_URL)
+        needs_update = True
+
+    if not API_KEY:
+        API_KEY = input("API KEY is empty. Please enter your 2CAPTCHA API Key: ").strip()
+        update_self_variable('API_KEY', API_KEY)
+        needs_update = True
+
+    if not needs_update:
+        print(f"{SUCCESS_ICON} RPC_URL and API_KEY are already set.")
 
 def load_wallets(path):
     try:
@@ -72,7 +123,7 @@ def solve_captcha():
         captcha_code = result.get('code')
         return captcha_code
     except Exception as e:
-        print(f"{FAILURE_ICON} Captcha solving failed.")
+        print(f"{FAILURE_ICON} Captcha solving failed: {e}")
         return None
 
 def get_public_ip(proxy):
@@ -107,7 +158,7 @@ def send_faucet_request(wallet_address, captcha_code, proxy):
         response = requests.post(FAUCET_URL, headers=headers, json=data, proxies=proxies_dict, timeout=10)
         if response.status_code == 200:
             msg = response.json().get('msg', 'No message provided.')
-            print(f"{SUCCESS_ICON} Request Successful for Wallet {wallet_address}")
+            print(f"{SUCCESS_ICON} Request Successful for Wallet {wallet_address}: {msg}")
         elif response.status_code == 429:
             print(f"{FAILURE_ICON} Failed to claim faucet for Wallet {wallet_address}. Already claimed before the required wait time.")
         else:
@@ -117,8 +168,8 @@ def send_faucet_request(wallet_address, captcha_code, proxy):
 
 def extract_proxy_id(proxy):
     """
-    Extrae el Proxy ID del formato del proxy.
-    Ejemplo de proxy: 
+    Extracts the Proxy ID from the proxy format.
+    Example proxy: 
     socks5://u701a8bf256ac05ca-zone-custom-session-p8xb59n6s-sessTime-120:u701a8bf256ac05ca@43.152.113.55:2333
     Proxy ID: p8xb59n6s
     """
@@ -144,7 +195,7 @@ def process_wallet(wallet_address, proxies, web3):
         return
     print(f"{SUCCESS_ICON} Captcha Solved")
     
-    # Seleccionar proxy aleatorio
+    # Select a random proxy
     proxy = random.choice(proxies)
     proxy_id = extract_proxy_id(proxy)
     
@@ -175,7 +226,7 @@ def verify_balances(web3, wallets):
     return eligible_wallets
 
 def main_flow(wallets, proxies, web3):
-    # Verificar balances concurrentemente
+    # Verify balances concurrently
     eligible_wallets = verify_balances(web3, wallets)
     
     total_eligible = len(eligible_wallets)
@@ -185,21 +236,25 @@ def main_flow(wallets, proxies, web3):
         print(f"{INFO_ICON} No wallets eligible for faucet claim.")
         return
     
-    # Mezclar wallets sin imprimir
+    # Shuffle wallets without printing
     random.shuffle(eligible_wallets)
     
-    # Procesar cada wallet secuencialmente
+    # Process each wallet sequentially
     for wallet_address in eligible_wallets:
         process_wallet(wallet_address, proxies, web3)
     
     print(f"\n{SUCCESS_ICON} All eligible wallets have been processed.")
 
 def main():
-    # Cargar wallets y proxies
+    # Initialize credentials by checking if RPC_URL and API_KEY are set
+    if not RPC_URL or not API_KEY:
+        initialize_credentials()
+    
+    # Load wallets and proxies
     wallets = load_wallets(WALLETS_PATH)
     proxies = load_proxies(PROXIES_PATH)
 
-    # Conectar a Web3
+    # Connect to Web3
     web3 = Web3(Web3.HTTPProvider(RPC_URL))
     if not web3.isConnected():
         print(f"{FAILURE_ICON} Unable to connect to Ethereum node.")
@@ -207,7 +262,7 @@ def main():
     else:
         print(f"{SUCCESS_ICON} Connected to Ethereum node.")
 
-    # Interacción inicial para mantener el script en ejecución
+    # Initial interaction to keep the script running
     while True:
         user_input = input("Do you want to keep the script running every 8-10 hours? (y/n): ").strip().lower()
         if user_input not in ['y', 'n']:
@@ -220,7 +275,7 @@ def main():
         try:
             while True:
                 main_flow(wallets, proxies, web3)
-                # Generar tiempo de espera aleatorio entre 8 y 10 horas (28800 a 36000 segundos)
+                # Generate random wait time between 8 and 10 hours (28800 to 36000 seconds)
                 wait_time = random.randint(28800, 36000)
                 hours = wait_time // 3600
                 minutes = (wait_time % 3600) // 60
