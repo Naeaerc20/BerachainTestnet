@@ -77,8 +77,7 @@ const STAKE_LP_CONTRACT = "0x175e2429bCb92643255abCbCDF47Fff63F7990CC";
 
 // RPC URLs
 const RPC_URLS = [
-  "https://bartio.rpc.berachain.com",
-  "https://berachain-bartio.g.alchemy.com/v2/t_qjVdhjAo-ygO6wAiQIu_bOiJ7BopN5"
+  "https://bartio.rpc.berachain.com"
 ];
 
 // Chain Information

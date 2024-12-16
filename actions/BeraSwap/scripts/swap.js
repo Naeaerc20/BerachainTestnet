@@ -32,13 +32,11 @@ function loadTokens() {
   return JSON.parse(fs.readFileSync(tokensPath, 'utf8'));
 }
 
-// Ahora usaremos valores fijos altos para gasLimit, maxFeePerGas y maxPriorityFeePerGas
-// Esto ayudará a que las transacciones se procesen más rápido.
 function getHighGasParams() {
   const gasLimit = 1000000;
   const maxFeePerGas = ethers.utils.parseUnits('15', 'gwei'); 
   const maxPriorityFeePerGas = ethers.utils.parseUnits('15', 'gwei');
-  console.log(`⚡ Using high fixed gas parameters for faster transactions: GasLimit=${gasLimit}, MaxFeePerGas=${maxFeePerGas.toString()} wei, MaxPriorityFeePerGas=${maxPriorityFeePerGas.toString()} wei`);
+  console.log(`🟢 Hight Fee Data Enabled`);
   return { gasLimit, maxFeePerGas, maxPriorityFeePerGas };
 }
 
@@ -92,15 +90,47 @@ async function checkAndApproveIfNeeded(tokenSymbol, tokenAddress, amountIn, sign
   }
 }
 
+async function getTokenBalance(signer, tokenAddress) {
+  const erc20ABI = [
+    {
+      "constant": true,
+      "inputs": [{ "name": "_owner", "type": "address" }],
+      "name": "balanceOf",
+      "outputs": [{ "name": "", "type": "uint256" }],
+      "type": "function"
+    }
+  ];
+  
+  const tokenContract = new ethers.Contract(tokenAddress, erc20ABI, signer.provider);
+  const balance = await tokenContract.balanceOf(signer.address);
+  return balance;
+}
+
+async function getBalances(signer, tokenASymbol, tokenAAddress, tokenBSymbol, tokenBAddress, wberaAddress) {
+  let balanceA;
+  let balanceB;
+
+  if (tokenASymbol === 'BERA') {
+    balanceA = await signer.getBalance();
+  } else {
+    balanceA = await getTokenBalance(signer, tokenAAddress);
+  }
+
+  if (tokenBSymbol === 'BERA') {
+    balanceB = await signer.getBalance();
+  } else {
+    balanceB = await getTokenBalance(signer, tokenBAddress);
+  }
+
+  console.log(`\n💰 Current Balances of Wallet [${signer.address}]:`);
+  console.log(`   ${tokenASymbol}: ${ethers.utils.formatEther(balanceA)}`);
+  console.log(`   ${tokenBSymbol}: ${ethers.utils.formatEther(balanceB)}`);
+  console.log();
+}
+
 async function performSwap(signer, beraswapRouter, symbolToAddress) {
-  // Ask user for tokens and amount
   const tokenASymbol = readlineSync.question('Insert TokenA (Base): ').toUpperCase();
   const tokenBSymbol = readlineSync.question('Insert TokenB (Quote): ').toUpperCase();
-  const amountInStr = readlineSync.question('How much you want to Swap? ');
-
-  const amountIn = parseAmount(amountInStr);
-  const amountOutMin = 1;
-  const deadline = Math.floor(Date.now() / 1000) + (60 * 20); // 20 minutes
 
   const isTokenA_BERA = (tokenASymbol === 'BERA');
   const isTokenB_BERA = (tokenBSymbol === 'BERA');
@@ -124,15 +154,61 @@ async function performSwap(signer, beraswapRouter, symbolToAddress) {
     return;
   }
 
-  console.log(`💱 Performing Swap [${tokenASymbol}/${tokenBSymbol}]`);
+  await getBalances(signer, tokenASymbol, tokenAAddress, tokenBSymbol, tokenBAddress, wberaAddress);
+
+  const amountInStr = readlineSync.question('How much you want to Swap? ');
+  const amountIn = parseAmount(amountInStr);
+
+  console.log(`\n🔗 Performing Swap [${tokenASymbol}/${tokenBSymbol}]`);
+
+  const amountOutMin = 1;
+  const deadline = Math.floor(Date.now() / 1000) + (60 * 20); // 20 minutes
+
+  // ABI para WBERA (WETH-like)
+  const wberaABI = [
+    "function deposit() payable",
+    "function withdraw(uint256)"
+  ];
+  const wberaContract = new ethers.Contract(wberaAddress, wberaABI, signer);
 
   try {
+    // Caso especial: BERA -> WBERA (deposit)
+    if (isTokenA_BERA && tokenBSymbol === 'WBERA') {
+      console.log(`🔄 Converting BERA to WBERA via deposit()...`);
+      const gasParams = getHighGasParams();
+      const tx = await wberaContract.deposit({
+        value: amountIn,
+        gasLimit: gasParams.gasLimit,
+        maxFeePerGas: gasParams.maxFeePerGas,
+        maxPriorityFeePerGas: gasParams.maxPriorityFeePerGas
+      });
+      console.log(`📨 Tx Hash Sent! - ${TX_EXPLORER}${tx.hash}`);
+      const receipt = await tx.wait();
+      console.log(`🏦 Tx Confirmed in Block Number [${receipt.blockNumber}]`);
+      return;
+    }
+
+    // Caso especial: WBERA -> BERA (withdraw)
+    if (tokenASymbol === 'WBERA' && isTokenB_BERA) {
+      console.log(`🔄 Converting WBERA to BERA via withdraw()...`);
+      const gasParams = getHighGasParams();
+      const tx = await wberaContract.withdraw(amountIn, {
+        gasLimit: gasParams.gasLimit,
+        maxFeePerGas: gasParams.maxFeePerGas,
+        maxPriorityFeePerGas: gasParams.maxPriorityFeePerGas
+      });
+      console.log(`📨 Tx Hash Sent! - ${TX_EXPLORER}${tx.hash}`);
+      const receipt = await tx.wait();
+      console.log(`🏦 Tx Confirmed in Block Number [${receipt.blockNumber}]`);
+      return;
+    }
+
     if (isTokenA_BERA && isTokenB_BERA) {
       console.error('❌ Swapping BERA to BERA makes no sense.');
       return;
     }
 
-    // Check approval for both tokens (as requested)
+    // Check approval if needed
     if (!isTokenA_BERA) {
       await checkAndApproveIfNeeded(tokenASymbol, tokenAAddress, amountIn, signer);
     } else {
@@ -145,15 +221,11 @@ async function performSwap(signer, beraswapRouter, symbolToAddress) {
       console.log(`✅ ${tokenBSymbol} is BERA-based, no token approval needed.`);
     }
 
-    // Use the high gas params for faster transactions
     const gasParams = getHighGasParams();
 
-    // Determine the type of swap
     if (isTokenA_BERA) {
       // swapExactETHForTokens
-      // Path: [WBERA, tokenBAddress]
       const pathArray = [wberaAddress, tokenBAddress];
-
       const tx = await beraswapRouter.swapExactETHForTokens(
         amountOutMin,
         pathArray,
@@ -172,9 +244,7 @@ async function performSwap(signer, beraswapRouter, symbolToAddress) {
 
     } else if (isTokenB_BERA) {
       // swapExactTokensForETH
-      // Path: [tokenAAddress, WBERA]
       const pathArray = [tokenAAddress, wberaAddress];
-
       const tx = await beraswapRouter.swapExactTokensForETH(
         amountIn,
         amountOutMin,
@@ -193,7 +263,6 @@ async function performSwap(signer, beraswapRouter, symbolToAddress) {
 
     } else {
       // swapExactTokensForTokens
-      // Path: [tokenAAddress, tokenBAddress]
       const tx = await beraswapRouter.swapExactTokensForTokens(
         amountIn,
         amountOutMin,
@@ -219,9 +288,14 @@ async function performSwap(signer, beraswapRouter, symbolToAddress) {
 (async () => {
   let wallets = loadWallets();
 
-  // Ahora por defecto usamos el wallet con ID=10
-  let currentWalletId = 10;
-  let selectedWallet = selectWallet(wallets, currentWalletId);
+  const walletIdStr = readlineSync.question('Insert the Wallet ID to use: ');
+  const walletId = parseInt(walletIdStr, 10);
+  if (isNaN(walletId)) {
+    console.error('❌ Invalid Wallet ID.');
+    process.exit(1);
+  }
+
+  let selectedWallet = selectWallet(wallets, walletId);
   if(!selectedWallet) {
     process.exit(1);
   }
@@ -248,7 +322,6 @@ async function performSwap(signer, beraswapRouter, symbolToAddress) {
       if (sameWallet === 'Y') {
         // Same wallet, do nothing
       } else {
-        // Select a new wallet ID
         const newWalletIdStr = readlineSync.question('Insert the new Wallet ID: ');
         const newWalletId = parseInt(newWalletIdStr, 10);
         if (isNaN(newWalletId)) {

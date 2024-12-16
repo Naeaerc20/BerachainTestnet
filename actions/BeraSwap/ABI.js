@@ -6,28 +6,13 @@ const ABI = [
     "type": "function",
     "stateMutability": "payable",
     "inputs": [
-      {
-        "name": "amountOutMin",
-        "type": "uint256"
-      },
-      {
-        "name": "path",
-        "type": "address[]"
-      },
-      {
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "name": "deadline",
-        "type": "uint256"
-      }
+      { "name": "amountOutMin", "type": "uint256" },
+      { "name": "path", "type": "address[]" },
+      { "name": "to", "type": "address" },
+      { "name": "deadline", "type": "uint256" }
     ],
     "outputs": [
-      {
-        "name": "amounts",
-        "type": "uint256[]"
-      }
+      { "name": "amounts", "type": "uint256[]" }
     ]
   },
   {
@@ -35,32 +20,14 @@ const ABI = [
     "type": "function",
     "stateMutability": "nonpayable",
     "inputs": [
-      {
-        "name": "amountIn",
-        "type": "uint256"
-      },
-      {
-        "name": "amountOutMin",
-        "type": "uint256"
-      },
-      {
-        "name": "path",
-        "type": "address[]"
-      },
-      {
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "name": "deadline",
-        "type": "uint256"
-      }
+      { "name": "amountIn", "type": "uint256" },
+      { "name": "amountOutMin", "type": "uint256" },
+      { "name": "path", "type": "address[]" },
+      { "name": "to", "type": "address" },
+      { "name": "deadline", "type": "uint256" }
     ],
     "outputs": [
-      {
-        "name": "amounts",
-        "type": "uint256[]"
-      }
+      { "name": "amounts", "type": "uint256[]" }
     ]
   },
   {
@@ -68,44 +35,40 @@ const ABI = [
     "type": "function",
     "stateMutability": "nonpayable",
     "inputs": [
-      {
-        "name": "amountIn",
-        "type": "uint256"
-      },
-      {
-        "name": "amountOutMin",
-        "type": "uint256"
-      },
-      {
-        "name": "path",
-        "type": "address[]"
-      },
-      {
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "name": "deadline",
-        "type": "uint256"
-      }
+      { "name": "amountIn", "type": "uint256" },
+      { "name": "amountOutMin", "type": "uint256" },
+      { "name": "path", "type": "address[]" },
+      { "name": "to", "type": "address" },
+      { "name": "deadline", "type": "uint256" }
     ],
     "outputs": [
-      {
-        "name": "amounts",
-        "type": "uint256[]"
-      }
+      { "name": "amounts", "type": "uint256[]" }
+    ]
+  },
+  {
+    "name": "addLiquidityETH",
+    "type": "function",
+    "stateMutability": "payable",
+    "inputs": [
+      { "name": "token", "type": "address" },
+      { "name": "amountTokenDesired", "type": "uint256" },
+      { "name": "amountTokenMin", "type": "uint256" },
+      { "name": "amountETHMin", "type": "uint256" },
+      { "name": "to", "type": "address" },
+      { "name": "deadline", "type": "uint256" }
+    ],
+    "outputs": [
+      { "name": "amountToken", "type": "uint256" },
+      { "name": "amountETH", "type": "uint256" },
+      { "name": "liquidity", "type": "uint256" }
     ]
   }
 ];
 
 const BERASWAP_ROUTER = "0x0468f03624A0b36614F34F7Fa3b615e9F39E70E2";
-
 const RPC_URL = "https://bartio.rpc.berachain.com";
-
 const CHAIN_ID = 80084;
-
 const TX_EXPLORER = "https://bartio.beratrail.io/tx/";
-
 const SYMBOL = "BERA";
 
 module.exports = {
