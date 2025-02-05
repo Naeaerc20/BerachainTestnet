@@ -16,8 +16,6 @@ const POOLS = [
 
 // Configuración de Parámetros de Transacción
 const GAS_LIMIT = 2000000;
-const MAX_FEE_PER_GAS = ethers.utils.parseUnits('10', 'gwei');
-const MAX_PRIORITY_FEE_PER_GAS = ethers.utils.parseUnits('10', 'gwei');
 
 // Inicializar Interfaz de Línea de Comandos
 const rl = readline.createInterface({
@@ -45,6 +43,35 @@ try {
     rl.close();
     process.exit(1);
 }
+
+// Función para Obtener Tarifas Dinámicas
+const getDynamicFees = async (provider) => {
+    try {
+        const feeData = await provider.getFeeData();
+        const latestBlock = await provider.getBlock("latest");
+        const baseFee = latestBlock.baseFeePerGas;
+
+        if (!baseFee) {
+            throw new Error("Unable to fetch base fee per gas");
+        }
+
+        // Calcula maxFeePerGas y maxPriorityFeePerGas como baseFee + 40% de baseFee
+        const multiplier = 14; // Representa 1.4 en enteros
+        const divisor = 10;
+
+        const maxFeePerGas = baseFee.mul(multiplier).div(divisor);
+        const maxPriorityFeePerGas = baseFee.mul(multiplier).div(divisor);
+
+        return { maxFeePerGas, maxPriorityFeePerGas };
+    } catch (error) {
+        console.error("❌ Error al obtener tarifas dinámicas:", error.message);
+        // Valor por defecto en caso de error
+        return {
+            maxFeePerGas: ethers.utils.parseUnits('50', 'gwei'),
+            maxPriorityFeePerGas: ethers.utils.parseUnits('50', 'gwei')
+        };
+    }
+};
 
 // Función para Procesar Recompensas de una Wallet
 const processWallet = async (wallet, contractInstances, provider) => {
@@ -83,11 +110,14 @@ const processWallet = async (wallet, contractInstances, provider) => {
             for (const index of eligiblePoolIndices) {
                 const pool = contractWithSigner[index];
                 try {
+                    // Obtener tarifas dinámicas antes de cada transacción
+                    const { maxFeePerGas, maxPriorityFeePerGas } = await getDynamicFees(provider);
+
                     // **Corrección Aquí**: Pasar la dirección de la wallet al llamar a getReward
                     const tx = await pool.contractWithSigner.getReward(wallet.wallet, {
                         gasLimit: GAS_LIMIT,
-                        maxFeePerGas: MAX_FEE_PER_GAS,
-                        maxPriorityFeePerGas: MAX_PRIORITY_FEE_PER_GAS
+                        maxFeePerGas: maxFeePerGas,
+                        maxPriorityFeePerGas: maxPriorityFeePerGas
                     });
                     console.log(`✅ Claimed from ${POOLS[index].name}: ${TX_EXPLORER}${tx.hash}`);
                     // Esperar a que la transacción sea confirmada

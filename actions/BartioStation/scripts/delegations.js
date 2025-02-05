@@ -12,7 +12,6 @@ const VALIDATORS = [
     { name: "Infrared", address: "0x2D764DFeaAc00390c69985631aAA7Cc3fcfaFAfF" },
     { name: "Kodiak", address: "0x0eCBe62654622e14ae882B8c8c65C3f3F54eCcf9" },
     { name: "TheHoneyJar", address: "0x34D023ACa5A227789B45A62D377b5B18A680BE01" },
-    { name: "BeraLand", address: "0x35c1e9C7803b47af738f37Beada3c7c35Eed73d4" },
     { name: "TTT", address: "0xB791098b00AD377B220f91d7878d19e441388eD8" },
     { name: "StakeLab", address: "0xC5b889a28950e7F8c1F279f758d8a0ab1C89cC38" }
 ];
@@ -49,8 +48,8 @@ const BGT_ADDRESS = "0xbDa130737BDd9618301681329bF2e46A016ff9Ad";
 const bgtContract = new ethers.Contract(BGT_ADDRESS, ABI, provider);
 
 const GAS_LIMIT = 2000000;
-const MAX_FEE = ethers.utils.parseUnits('10', 'gwei');
-const MAX_PRIORITY = ethers.utils.parseUnits('10', 'gwei');
+const MAX_FEE = ethers.utils.parseUnits('30', 'gwei');
+const MAX_PRIORITY = ethers.utils.parseUnits('30', 'gwei');
 
 function findValidatorName(address) {
     const val = VALIDATORS.find(v => v.address.toLowerCase() === address.toLowerCase());
